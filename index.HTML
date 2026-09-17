@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>迷你查询 | 官方网站</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+<script>
+tailwind.config = {
+  theme:{
+    extend:{
+      colors:{
+        brand:{
+          main:'#0070ff',
+          glow:'#298bff'
+        }
+      }
+    }
+  }
+}
+</script>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-size-adjust: none;
+  -webkit-text-size-adjust: none !important;
+  text-size-adjust: none !important;
+}
+html {
+  scroll-behavior: smooth;
+  font-size: 14px !important;
+}
+body {
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #e2e8f0;
+  overflow-x: hidden;
+  background: radial-gradient(#182236, #0b101c);
+}
+a {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+a:visited {
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.bg-scene {
+  position: fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:0;
+  background-size: cover;
+  background-position:center;
+  background-repeat: no-repeat;
+  filter: brightness(0.65) saturate(1.1);
+}
+
+#snow-canvas {
+  position: fixed;
+  left:0;
+  top:0;
+  width: 100vw;
+  height:100vh;
+  pointer-events: none;
+  z-index:1;
+}
+
+.liquid-glass {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(26px) saturate(160%);
+  -webkit-backdrop-filter: blur(26px) saturate(160%);
+  border-radius:24px;
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.32),
+    inset 0 -1px 0 rgba(0,0,0,0.08),
+    0 12px 45px rgba(0,0,0,0.35);
+}
+.liquid-glass-heavy {
+  background: rgba(20,28,48,0.32);
+  backdrop-filter: blur(30px) saturate(170%);
+  -webkit-backdrop-filter: blur(30px) saturate(170%);
+  border-radius:28px;
+  border:1px solid rgba(255,255,255,0.20);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.30),
+    inset 0 -1px 0 rgba(0,0,0,0.12),
+    0 18px 60px rgba(0,0,0,0.42);
+}
+
+.nav-capsule {
+  position: relative;
+  margin:22px auto 0;
+  z-index: 10 !important;
+  padding:12px 20px;
+  max-width: calc(100% - 32px);
+}
+
+.hover-lift {
+  transition: 0.38s cubic-bezier(0.21,0.98,0.26,0.99);
+}
+.hover-lift:hover {
+  transform: translateY(-7px) scale(1.012);
+  box-shadow:0 22px 50px rgba(0,0,0,0.38);
+}
+
+.grad-line {
+  height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+}
+
+.btn-glow {
+  position:relative;
+  overflow:hidden;
+}
+.btn-glow::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(circle at center, rgba(255,255,255,0.20), transparent 62%);
+  opacity:0;
+  transition:0.3s;
+}
+.btn-glow:hover::after {
+  opacity:1;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity:0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity:1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fadeUp 0.72s ease-out forwards;
+}
+.tag-badge{
+  display:inline-block;
+  padding:10px 22px;
+  border-radius:22px;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.14);
+  color:#b9d8ff;
+  font-size:14px !important;
+  margin-bottom:28px;
+}
+h1{
+  font-size:32px !important;
+}
+h2{
+  font-size:24px !important;
+}
+h3{
+  font-size:17px !important;
+}
+p{
+  font-size:14px !important;
+}
+
+/* 自定义弹窗，替代浏览器原生confirm，防止被脚本绕过 */
+#customModal{
+  position:fixed;
+  inset:0;
+  z-index:999;
+  background:rgba(0,0,0,0.65);
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+.modal-box{
+  width:min(360px,90%);
+}
+.modal-btn-group{
+  display:flex;
+  gap:12px;
+  margin-top:24px;
+}
+.modal-btn{
+  flex:1;
+  padding:12px;
+  border-radius:14px;
+  border:none;
+  cursor:pointer;
+  font-size:14px;
+}
+.modal-confirm{
+  background:#0070ff;
+  color:white;
+}
+.modal-cancel{
+  background:rgba(255,255,255,0.1);
+  color:#e2e8f0;
+}
+</style>
+</head>
+<body>
+
+<div id="customModal">
+  <div class="liquid-glass-heavy modal-box p-8">
+    <h3 class="mb-4">下载提示</h3>
+    <p class="text-slate-300 mb-2">网盘提取密码：<strong>8888</strong></p>
+    <div class="modal-btn-group">
+      <button class="modal-btn modal-cancel" onclick="closeModal()">取消</button>
+      <button class="modal-btn modal-confirm" onclick="goDownload()">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="bg-scene" id="bgScene"></div>
+
+<canvas id="snow-canvas"></canvas>
+
+<header class="liquid-glass nav-capsule">
+  <div class="flex gap-4 items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-xl bg-[#0070ff]/25 flex items-center justify-center">
+        <i class="fa fa-search text-brand-main"></i>
+      </div>
+      <span class="font-semibold tracking-wide">迷你查询</span>
+    </div>
+    <button onclick="scrollToDownload()" class="liquid-glass px-4 py-2 btn-glow hover-lift text-sm">
+      <i class="fa fa-download mr-1"></i>立即获取
+    </button>
+  </div>
+</header>
+
+<section id="hero" class="pt-10 pb-28 px-6 fade-up relative z-2">
+  <div class="max-w-7xl mx-auto">
+      <div class="tag-badge">
+        <i class="fa fa-bolt mr-2"></i>新一代移动端检索引擎 · 流畅性 · 优化内存占比稳定性
+      </div>
+      <h1 class="font-bold leading-tight mb-7">
+        迷你查询
+      </h1>
+      <p class="text-slate-300 leading-relaxed mb-10">
+        面向移动端打造的高性能公开信息检索应用。重构内部请求调度，实现高速的数据规整与结果解析，以现代UI交互重新定义移动端查阅体验。
+      </p>
+      <div class="flex flex-wrap gap-5">
+        <button onclick="scrollToDownload()" class="bg-brand-main px-8 py-3 rounded-2xl btn-glow hover-lift">
+          <i class="fa fa-android mr-2"></i>下载客户端
+        </button>
+        <a href="#features" class="liquid-glass px-8 py-3 hover-lift">了解技术能力</a>
+      </div>
+  </div>
+</section>
+
+<div class="grad-line max-w-6xl mx-auto"></div>
+
+<section id="features" class="py-24 px-6 relative z-2">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center mb-16">
+      <h2 class="font-bold mb-4">核心技术特性</h2>
+      <p class="text-slate-300 max-w-2xl mx-auto">底层架构针对性优化，兼顾速度、稳定性与使用安全</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="liquid-glass p-9 hover-lift">
+        <div class="w-12 h-12 rounded-xl bg-[#0070ff]/18 flex items-center justify-center mb-6">
+          <i class="fa fa-flash text-brand-main text-2xl"></i>
+        </div>
+        <h3 class="font-semibold mb-3">低延迟检索</h3>
+        <p class="text-slate-300">多路请求调度，智能择优网络链路，大幅减少等待耗时。</p>
+      </div>
+      <div class="liquid-glass p-9 hover-lift">
+        <div class="w-12 h-12 rounded-xl bg-[#0070ff]/18 flex items-center justify-center mb-6">
+          <i class="fa fa-shield text-brand-main text-2xl"></i>
+        </div>
+        <h3 class="font-semibold mb-3">运行沙箱防护</h3>
+        <p class="text-slate-300">独立运行沙箱，应用不会私自向外提交本机隐私信息。</p>
+      </div>
+      <div class="liquid-glass p-9 hover-lift">
+        <div class="w-12 h-12 rounded-xl bg-[#0070ff]/18 flex items-center justify-center mb-6">
+          <i class="fa fa-sitemap text-brand-main text-2xl"></i>
+        </div>
+        <h3 class="font-semibold mb-3">智能数据解析</h3>
+        <p class="text-slate-300">引擎自动清洗原始返回内容，整理为易读结构化视图。</p>
+      </div>
+      <div class="liquid-glass p-9 hover-lift">
+        <div class="w-12 h-12 rounded-xl bg-[#0070ff]/18 flex items-center justify-center mb-6">
+          <i class="fa fa-mobile text-brand-main text-2xl"></i>
+        </div>
+        <h3 class="font-semibold mb-3">移动端深度适配</h3>
+        <p class="text-slate-300">针对安卓设备做内存优化，低内存机型也可以流畅运行。</p>
+      </div>
+      <div class="liquid-glass p-9 hover-lift">
+        <div class="w-12 h-12 rounded-xl bg-[#0070ff]/18 flex items-center justify-center mb-6">
+          <i class="fa fa-history text-brand-main text-2xl"></i>
+        </div>
+        <h3 class="font-semibold mb-3">本地检索历史</h3>
+        <p class="text-slate-300">全部历史记录保存在本机本地，不会同步上传远端服务器。</p>
+      </div>
+      <div class="liquid-glass p-9 hover-lift">
+        <div class="w-12 h-12 rounded-xl bg-[#0070ff]/18 flex items-center justify-center mb-6">
+          <i class="fa fa-code text-brand-main text-2xl"></i>
+        </div>
+        <h3 class="font-semibold mb-3">持续迭代更新</h3>
+        <p class="text-slate-300">版本持续维护，定期修复异常，迭代新增功能模块。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="grad-line max-w-6xl mx-auto"></div>
+
+<section id="spec" class="py-24 px-6 relative z-2">
+  <div class="max-w-6xl mx-auto">
+    <div class="liquid-glass-heavy p-8">
+      <h2 class="font-bold mb-8">技术规格</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="liquid-glass p-6">
+          <div class="text-slate-300 text-sm mb-1">当前正式版本</div>
+          <div class="text-xl font-medium">V1.3.0</div>
+        </div>
+        <div class="liquid-glass p-6">
+          <div class="text-slate-300 text-sm mb-1">适配平台</div>
+          <div class="text-xl font-medium">Android 8.0及以上</div>
+        </div>
+        <div class="liquid-glass p-6">
+          <div class="text-slate-300 text-sm mb-1">程序架构</div>
+          <div class="text-xl font-medium">移动端原生架构</div>
+        </div>
+        <div class="liquid-glass p-6">
+          <div class="text-slate-300 text-sm mb-1">更新维护策略</div>
+          <div class="text-xl font-medium">长期持续迭代维护</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="download" class="py-28 px-6 relative z-2">
+  <div class="max-w-5xl mx-auto text-center">
+    <div class="liquid-glass-heavy p-12 rounded-3xl">
+      <h2 class="font-bold mb-5">下载中心</h2>
+      <p class="text-slate-300 mb-10">获取迷你查询正式安装包，开启高效检索体验</p>
+      <button onclick="showModal()" class="inline-block bg-brand-main px-10 py-4 rounded-2xl hover-lift text-lg border-0 cursor-pointer">
+        <i class="fa fa-download mr-3"></i>Android APK 正式包下载
+      </button>
+      <p class="text-xs text-slate-400 mt-6">提示：请校验安装包，合规使用本软件，仅用于公开信息查阅。</p>
+    </div>
+  </div>
+</section>
+
+<footer class="py-12 border-t border-white/10 mt-10 relative z-2">
+  <div class="max-w-7xl mx-auto px-6 text-center text-sm text-slate-400">
+    <p>© 2026 迷你查询 版权所有</p>
+    <p class="mt-3">本软件仅供公开信息查阅使用，请遵守当地相关网络使用规范。</p>
+  </div>
+</footer>
+
+<script>
+const bgImageList = [
+"https://images.unsplash.com/photo-1519681393784-d12991f2f0b6?q=80",
+"https://images.unsplash.com/photo-1464822759023-fed69432356d?q=80",
+"https://images.unsplash.com/photo-1433086966358-54859d0ed716?q=80",
+"https://images.unsplash.com/photo-1506905925346-21bda132ad31?q=80",
+"https://images.unsplash.com/photo-1448375989035-0287f3f98e03?q=80",
+"https://images.unsplash.com/photo-1501785888041-af5750d33248?q=80"
+];
+(function(){
+  const el = document.getElementById("bgScene");
+  const randomImg = bgImageList[Math.floor(Math.random()*bgImageList.length)];
+  const imgTest = new Image();
+  imgTest.src = randomImg;
+  imgTest.onload = function(){
+    el.style.backgroundImage = `url('${randomImg}')`;
+  };
+  imgTest.onerror = function(){
+    el.style.backgroundImage = "none";
+  };
+})();
+
+(function () {
+  const canvas = document.getElementById('snow-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, DPR;
+  const SNOW_COUNT = 120;
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 1.5);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    // 修复快速滑动白屏：resize立刻重绘全部雪花
+    for(let i=0;i<snowflakes.length;i++){
+      snowflakes[i].x = Math.random()*W;
+      snowflakes[i].y = Math.random()*H;
+    }
+  }
+  const snowflakes = [];
+  function createSnowflake(initFlag){
+    const sz = Math.random()*1.6+0.7;
+    return {
+      x: Math.random()*W,
+      y: initFlag ? Math.random()*H : -8,
+      r:sz,
+      vx:(Math.random()-0.5)*0.22,
+      vy:Math.random()*0.32+0.24,
+      sway:Math.random()*Math.PI*2,
+      swaySpd:Math.random()*0.011+0.004,
+      alpha:Math.random()*0.32+0.32
+    };
+  }
+  function initSnow(){
+    resize();
+    snowflakes.length=0;
+    for(let i=0;i<SNOW_COUNT;i++) snowflakes.push(createSnowflake(true));
+  }
+  function renderLoop(){
+    ctx.clearRect(0,0,W,H);
+    for(let i=0;i<snowflakes.length;i++){
+      const s=snowflakes[i];
+      ctx.beginPath();
+      ctx.fillStyle=`rgba(255,255,255,${s.alpha})`;
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fill();
+      s.sway += s.swaySpd;
+      s.x += s.vx + Math.sin(s.sway)*0.11;
+      s.y += s.vy;
+      if(s.y>H+6) snowflakes[i]=createSnowflake(false);
+      if(s.x>W+6) s.x=-6;
+      if(s.x<-6) s.x=W+6;
+    }
+    requestAnimationFrame(renderLoop);
+  }
+  initSnow();
+  renderLoop();
+  window.addEventListener('resize',initSnow);
+})();
+
+// 自定义弹窗逻辑，不使用浏览器原生弹窗，防止被绕过
+function showModal(){
+  document.getElementById("customModal").style.display="flex";
+}
+function closeModal(){
+  document.getElementById("customModal").style.display="none";
+}
+function goDownload(){
+  closeModal();
+  window.open("https://wwanv.lanzoup.com/b0188mn9qj","_blank");
+}
+
+// 修复锚点点击失效，使用JS滚动，不依赖a标签锚点
+function scrollToDownload(){
+  document.getElementById("download").scrollIntoView({behavior:"smooth"});
+}
+</script>
+
+</body>
+</html>
